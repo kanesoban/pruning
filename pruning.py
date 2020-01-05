@@ -99,13 +99,19 @@ def unwatch_layer(layer):
     delattr(layer, 'old_call')
 
 
+def unwatch_all_layers(layers):
+    for layer in layers:
+        if hasattr(layer, 'old_call'):
+            unwatch_layer(layer)
+
+
 def calculate_z_derivatives(model: Model, inputs, targets, cnn_layers):
     omega_te = []
-    for i, cnn_layer in enumerate(cnn_layers):
+    for l, cnn_layer in enumerate(cnn_layers):
         total_loss = 0
         with GradientTape() as tape:
-            if i > 0:
-                unwatch_layer(cnn_layers[i-1])
+            if l > 0:
+                unwatch_layer(cnn_layers[l-1])
             watch_layer(cnn_layer, tape)
             outs = model(inputs)
 
@@ -142,7 +148,8 @@ def calculate_z_derivatives(model: Model, inputs, targets, cnn_layers):
         r = np.sum(r, axis=0)
         r /= shape[0] * shape[1] * shape[2]
         omega_te.append(r)
-    return omega_te
+    unwatch_layer(cnn_layers[-1])
+    return np.array(omega_te)
 
 
 def get_cnn_layers(model: tf.keras.Model):
@@ -176,8 +183,10 @@ def prune_model(model: tf.keras.Model, data_train: np.ndarray, label_train: np.n
     cnn_layers = get_cnn_layers(model)
     batches = data_train.shape[0] // batch_size
     for i in tqdm(range(prune_iterations)):
-        omega_te = 0
-        for batch in range(batches):
+        data_batch = data_train[:batch_size]
+        label_batch = label_train[:batch_size]
+        omega_te = calculate_z_derivatives(model, data_batch, label_batch, cnn_layers)
+        for batch in range(1, batches):
             data_batch = data_train[i * batch_size:(i+1) * batch_size]
             label_batch = label_train[i * batch_size:(i+1) * batch_size]
             omega_te += calculate_z_derivatives(model, data_batch, label_batch, cnn_layers)

@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # Install TensorFlow
 
 import tensorflow as tf
+from tensorflow.keras import datasets
 import numpy as np
 
 # Is this eager mode ?
@@ -14,19 +15,16 @@ from pruning import prune_model
 
 
 BATCH_SIZE = 32
-mnist = tf.keras.datasets.mnist
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+INPUT_SHAPE = (32, 32, 3)
+(train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
 
-
-data_train = np.expand_dims(x_train / 255.0, axis=-1)
-label_train = np.expand_dims(y_train / 255.0, axis=-1)
-data_test = np.expand_dims(x_train / 255.0, axis=-1)
-label_test = np.expand_dims(y_train / 255.0, axis=-1)
+# Normalize pixel values to be between 0 and 1
+train_images, test_images = train_images / 255.0, test_images / 255.0
 
 model = tf.keras.models.load_model('model.h5')
 
-prune_iterations = 1
-model = prune_model(model, data_train, label_train, data_test, label_test, BATCH_SIZE, prune_iterations)
+prune_iterations = 10
+model = prune_model(model, train_images, train_labels, test_images, test_labels, BATCH_SIZE, prune_iterations)
 
 model.save("pruned_model.h5")

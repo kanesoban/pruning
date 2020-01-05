@@ -6,18 +6,20 @@ import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 import numpy as np
 
+# Is this eager mode ?
+tf.executing_eagerly()
+assert (tf.__version__ == '2.0.0')
+tf.config.experimental_run_functions_eagerly(True)
+
 
 BATCH_SIZE = 32
 mnist = datasets.mnist
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+INPUT_SHAPE = (32, 32, 3)
+(train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
 
-
-INPUT_SHAPE = (28, 28, 1)
-train_images = np.expand_dims(x_train / 255.0, axis=-1)
-train_labels = np.expand_dims(y_train / 255.0, axis=-1)
-test_images = np.expand_dims(x_test / 255.0, axis=-1)
-test_labels = np.expand_dims(y_test / 255.0, axis=-1)
+# Normalize pixel values to be between 0 and 1
+train_images, test_images = train_images / 255.0, test_images / 255.0
 
 
 model = tf.keras.models.Sequential()
@@ -37,4 +39,5 @@ model.compile(optimizer='adam',
 
 model.fit(train_images, train_labels, validation_data=(test_images, test_labels), batch_size=BATCH_SIZE, epochs=10)
 
-model.save("model.h5")
+model.save("model_dir")
+
